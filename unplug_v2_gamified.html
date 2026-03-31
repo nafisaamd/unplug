@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unplug — Offline Activity Book</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,400&family=DM+Sans:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#FFFDF8;color:#2C2C2A;overflow-x:hidden}
+:root{
+  --coral:#F0997B;--coral-d:#712B13;--coral-l:#FAECE7;
+  --teal:#1D9E75;--teal-d:#085041;--teal-l:#E1F5EE;
+  --amber:#EF9F27;--amber-d:#633806;--amber-l:#FAEEDA;
+  --purple:#7F77DD;--purple-d:#3C3489;--purple-l:#EEEDFE;
+  --pink:#D4537E;--pink-d:#72243E;--pink-l:#FBEAF0;
+  --green:#639922;--green-d:#27500A;--green-l:#EAF3DE;
+  --ink:#2C2C2A;--muted:#888780;--pale:#F1EFE8;--white:#FFFDF8;
+}
+
+#hud{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#fff;border-bottom:1px solid #E8E6E0;flex-wrap:wrap}
+.hud-stat{display:flex;flex-direction:column;align-items:center;min-width:48px}
+.hud-val{font-size:18px;font-weight:600;line-height:1;color:var(--ink)}
+.hud-lbl{font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-top:2px}
+.hud-sep{width:1px;height:32px;background:#E8E6E0}
+.xp-bar-wrap{flex:1;min-width:100px}
+.xp-bar-bg{height:8px;background:#E8E6E0;border-radius:100px;overflow:hidden}
+.xp-bar-fill{height:100%;background:var(--purple);border-radius:100px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.xp-lbl{font-size:10px;color:var(--muted);margin-top:3px}
+.level-badge{background:var(--purple-l);color:var(--purple-d);font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px}
+.streak-fire{color:var(--coral);font-size:16px}
+
+#nav{display:flex;gap:4px;padding:10px 12px;background:#fff;border-bottom:1px solid #E8E6E0;overflow-x:auto}
+.nav-btn{padding:8px 14px;border-radius:100px;border:1.5px solid transparent;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s;background:none;color:var(--muted);font-family:'DM Sans',sans-serif}
+.nav-btn.active{background:var(--ink);color:var(--white);border-color:var(--ink)}
+.nav-btn:hover:not(.active){background:var(--pale);color:var(--ink)}
+
+.screen{display:none;padding:16px}
+.screen.active{display:block}
+
+#toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--ink);color:#fff;padding:10px 20px;border-radius:100px;font-size:13px;font-weight:500;transition:transform .4s;z-index:100;white-space:nowrap}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+.home-title{font-family:'Fraunces',serif;font-size:2.2rem;font-weight:700;line-height:1;margin-bottom:6px}
+.home-title em{color:var(--coral);font-style:italic}
+.home-sub{font-size:14px;color:var(--muted);margin-bottom:20px}
+.activity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.act-card{border-radius:16px;padding:16px;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .2s}
+.act-card:hover{transform:translateY(-3px)}
+.act-card.coral{background:var(--coral-l);border-color:#F5C4B3}
+.act-card.teal{background:var(--teal-l);border-color:#9FE1CB}
+.act-card.amber{background:var(--amber-l);border-color:#FAC775}
+.act-card.purple{background:var(--purple-l);border-color:#CECBF6}
+.act-icon{font-size:28px;margin-bottom:8px}
+.act-name{font-weight:600;font-size:14px;color:var(--ink)}
+.act-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.badges-row{display:flex;gap:8px;flex-wrap:wrap}
+.badge{padding:6px 14px;border-radius:100px;font-size:12px;font-weight:600;opacity:.4}
+.badge.earned{opacity:1}
+.badge.coral{background:var(--coral-l);color:var(--coral-d)}
+.badge.teal{background:var(--teal-l);color:var(--teal-d)}
+.badge.amber{background:var(--amber-l);color:var(--amber-d)}
+.badge.purple{background:var(--purple-l);color:var(--purple-d)}
+.badge.pink{background:var(--pink-l);color:var(--pink-d)}
+.badge.green{background:var(--green-l);color:var(--green-d)}
+
+.scene-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.scene-tab{padding:6px 14px;border-radius:100px;border:1.5px solid #D3D1C7;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;background:none;font-family:'DM Sans',sans-serif;color:var(--muted)}
+.scene-tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.color-toolbar{display:flex;align-items:center;gap:8px;margin:10px 0;flex-wrap:wrap}
+.swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:transform .12s,border-color .12s;flex-shrink:0}
+.swatch.active{border-color:var(--ink);transform:scale(1.2)}
+.swatch:hover{transform:scale(1.15)}
+.custom-picker{width:32px;height:32px;border-radius:50%;border:2px solid #D3D1C7;cursor:pointer;padding:0;overflow:hidden;flex-shrink:0}
+.tool-btn{padding:5px 12px;border-radius:100px;border:1.5px solid #D3D1C7;font-size:12px;font-weight:500;cursor:pointer;background:none;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .15s}
+.tool-btn:hover{border-color:var(--ink);color:var(--ink)}
+.tool-btn.active-tool{background:var(--ink);color:#fff;border-color:var(--ink)}
+#coloring-canvas-wrap{border:2px solid #E8E6E0;border-radius:12px;overflow:hidden;background:#fff;cursor:crosshair}
+#coloring-canvas-wrap svg{width:100%;height:auto;display:block}
+.color-progress{margin-top:8px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.cprog-bar{flex:1;height:6px;background:#E8E6E0;border-radius:100px;overflow:hidden}
+.cprog-fill{height:100%;background:var(--coral);border-radius:100px;transition:width .4s}
+
+.difficulty-tabs{display:flex;gap:6px;margin-bottom:12px}
+.diff-tab{padding:6px 16px;border-radius:100px;border:1.5px solid #D3D1C7;font-size:13px;font-weight:500;cursor:pointer;background:none;font-family:'DM Sans',sans-serif;color:var(--muted);transition:all .15s}
+.diff-tab.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+.sudoku-wrap{max-width:340px;margin:0 auto}
+.sudoku-grid{display:grid;grid-template-columns:repeat(9,1fr);border:2.5px solid var(--ink);border-radius:8px;overflow:hidden}
+.sc{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:clamp(12px,3vw,17px);font-weight:500;cursor:pointer;transition:background .1s;position:relative;border:.5px solid #D3D1C7}
+.sc.given{font-weight:700;color:var(--ink)}
+.sc.user{color:var(--teal)}
+.sc.sel{background:var(--teal-l)}
+.sc.hl{background:#F1EFE8}
+.sc.wrong{color:var(--coral-d)}
+.sc.correct-flash{background:var(--teal-l);animation:flash .4s}
+@keyframes flash{0%,100%{background:var(--teal-l)}50%{background:#9FE1CB}}
+.sc:nth-child(3n){border-right:2px solid var(--ink)}
+.sc:nth-child(9n){border-right:none}
+.row3{border-bottom:2px solid var(--ink)}
+.row6{border-bottom:2px solid var(--ink)}
+.numpad{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-width:340px;margin:10px auto 0}
+.nb{padding:10px;border-radius:8px;border:1.5px solid #D3D1C7;background:none;font-size:17px;font-weight:600;cursor:pointer;color:var(--ink);transition:background .12s;font-family:'DM Sans',sans-serif}
+.nb:hover{background:var(--teal-l)}
+.nb.era{font-size:14px;color:var(--coral-d)}
+.sudoku-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;color:var(--muted)}
+.timer-val{font-weight:600;color:var(--ink);font-size:15px}
+.mistakes-val{color:var(--coral-d);font-weight:600}
+.new-puzzle-btn{display:block;width:100%;max-width:340px;margin:10px auto 0;padding:11px;background:var(--teal-l);color:var(--teal-d);border:none;border-radius:100px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .2s}
+.new-puzzle-btn:hover{background:#9FE1CB}
+
+.ws-theme-badge{display:inline-block;padding:4px 14px;border-radius:100px;background:var(--amber-l);color:var(--amber-d);font-size:12px;font-weight:600;margin-bottom:10px}
+.ws-wrap{max-width:400px;margin:0 auto}
+.ws-grid{display:grid;border:2px solid var(--ink);border-radius:8px;overflow:hidden;user-select:none}
+.wc{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:clamp(10px,2.2vw,14px);font-weight:600;border:.5px solid #D3D1C7;cursor:pointer;transition:background .1s;text-transform:uppercase;color:var(--ink)}
+.wc.sel{background:var(--amber-l)}
+.wc.f0{background:var(--coral-l);color:var(--coral-d)}
+.wc.f1{background:var(--teal-l);color:var(--teal-d)}
+.wc.f2{background:var(--purple-l);color:var(--purple-d)}
+.wc.f3{background:var(--amber-l);color:var(--amber-d)}
+.wc.f4{background:var(--pink-l);color:var(--pink-d)}
+.wc.f5{background:var(--green-l);color:var(--green-d)}
+.wc.f6{background:#E6F1FB;color:#0C447C}
+.wc.f7{background:#F1EFE8;color:#444441}
+.ws-words{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;max-width:400px}
+.ww{padding:4px 12px;border-radius:100px;font-size:12px;font-weight:600;background:var(--pale);color:var(--muted);text-transform:uppercase;letter-spacing:.04em;transition:all .2s}
+.ww.found{background:var(--teal-l);color:var(--teal-d);text-decoration:line-through}
+.ws-category-btns{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.ws-cat-btn{padding:6px 14px;border-radius:100px;border:1.5px solid #D3D1C7;font-size:12px;font-weight:500;cursor:pointer;background:none;font-family:'DM Sans',sans-serif;color:var(--muted);transition:all .15s}
+.ws-cat-btn.active{background:var(--amber);color:#fff;border-color:var(--amber)}
+.ws-status{font-size:13px;color:var(--muted);margin-top:8px;text-align:center;min-height:20px}
+
+.prompts-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.mood-row{display:flex;gap:8px;margin-bottom:16px}
+.mood-btn{padding:8px 14px;border-radius:100px;border:1.5px solid #D3D1C7;font-size:20px;cursor:pointer;background:none;transition:all .15s}
+.mood-btn.sel{border-color:var(--purple);background:var(--purple-l);transform:scale(1.15)}
+.prompt-card{background:#fff;border-radius:14px;border:1.5px solid #E8E6E0;padding:14px 16px;margin-bottom:12px;position:relative}
+.prompt-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:5px 0 0 5px}
+.pc-coral::before{background:var(--coral)}
+.pc-teal::before{background:var(--teal)}
+.pc-amber::before{background:var(--amber)}
+.pc-purple::before{background:var(--purple)}
+.pc-pink::before{background:var(--pink)}
+.prompt-num{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.prompt-q{font-family:'Fraunces',serif;font-size:15px;font-style:italic;line-height:1.5;margin-bottom:10px;color:var(--ink)}
+.jarea{width:100%;min-height:80px;resize:vertical;border:1px solid #E8E6E0;border-radius:8px;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.7;color:var(--ink);background:#FAFAF8;outline:none}
+.jarea:focus{border-color:#B4B2A9}
+.jarea::placeholder{color:#B4B2A9}
+.jchars{font-size:11px;color:var(--muted);text-align:right;margin-top:4px}
+.add-prompt-btn{display:block;width:100%;padding:12px;background:var(--purple-l);color:var(--purple-d);border:none;border-radius:100px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .2s;margin-top:4px}
+.add-prompt-btn:hover{background:#CECBF6}
+.word-count-strip{display:flex;gap:12px;margin-top:12px;flex-wrap:wrap}
+.wc-stat{background:var(--pale);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--muted);font-weight:500}
+.wc-stat span{display:block;font-size:18px;font-weight:600;color:var(--ink);line-height:1.2}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div id="hud">
+  <div class="hud-stat"><div class="hud-val" id="hud-xp">0</div><div class="hud-lbl">XP</div></div>
+  <div class="hud-sep"></div>
+  <div class="hud-stat"><div class="hud-val streak-fire" id="hud-streak">0🔥</div><div class="hud-lbl">Streak</div></div>
+  <div class="hud-sep"></div>
+  <div class="xp-bar-wrap">
+    <div class="level-badge" id="level-badge">Level 1</div>
+    <div class="xp-bar-bg" style="margin-top:4px"><div class="xp-bar-fill" id="xp-bar" style="width:0%"></div></div>
+    <div class="xp-lbl" id="xp-lbl">0 / 100 XP to next level</div>
+  </div>
+</div>
+
+<div id="nav">
+  <button class="nav-btn active" onclick="showScreen('home')">Home</button>
+  <button class="nav-btn" onclick="showScreen('color')">Coloring</button>
+  <button class="nav-btn" onclick="showScreen('sudoku')">Sudoku</button>
+  <button class="nav-btn" onclick="showScreen('ws')">Word Search</button>
+  <button class="nav-btn" onclick="showScreen('journal')">Journal</button>
+</div>
+
+<div class="screen active" id="screen-home">
+  <h1 class="home-title">Un<em>plug</em></h1>
+  <p class="home-sub">Your offline activity companion. Earn XP, unlock badges, keep your streak.</p>
+  <div class="activity-grid">
+    <div class="act-card coral" onclick="showScreen('color')">
+      <div class="act-icon">🎨</div>
+      <div class="act-name">Coloring Book</div>
+      <div class="act-meta">5 scenes · color picker</div>
+    </div>
+    <div class="act-card teal" onclick="showScreen('sudoku')">
+      <div class="act-icon">🔢</div>
+      <div class="act-name">Sudoku</div>
+      <div class="act-meta">Easy · Medium · Hard</div>
+    </div>
+    <div class="act-card amber" onclick="showScreen('ws')">
+      <div class="act-icon">🔍</div>
+      <div class="act-name">Word Search</div>
+      <div class="act-meta">4 themes · 8 words each</div>
+    </div>
+    <div class="act-card purple" onclick="showScreen('journal')">
+      <div class="act-icon">✍️</div>
+      <div class="act-name">Journal</div>
+      <div class="act-meta">20 prompts · mood tracker</div>
+    </div>
+  </div>
+  <div style="font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Your badges</div>
+  <div class="badges-row" id="badges-display"></div>
+</div>
+
+<div class="screen" id="screen-color">
+  <div class="scene-tabs" id="scene-tabs"></div>
+  <div class="color-toolbar">
+    <span style="font-size:12px;color:var(--muted)">Colors:</span>
+    <div class="swatch active" style="background:#F0997B" data-c="#F0997B" onclick="pickSwatch(this)"></div>
+    <div class="swatch" style="background:#EF9F27" data-c="#EF9F27" onclick="pickSwatch(this)"></div>
+    <div class="swatch" style="background:#1D9E75" data-c="#1D9E75" onclick="pickSwatch(this)"></div>
+    <div class="swatch" style="background:#378ADD" data-c="#378ADD" onclick="pickSwatch(this)"></div>
+    <div class="swatch" style="background:#7F77DD" data-c="#7F77DD" onclick="pickSwatch(this)"></div>
+    <div class="swatch" style="background:#D4537E" data-c="#D4537E" onclick="pickSwatch(this)"></div>
+    <div class="swatch" style="background:#639922" data-c="#639922" onclick="pickSwatch(this)"></div>
+    <div class="swatch" style="background:#2C2C2A" data-c="#2C2C2A" onclick="pickSwatch(this)"></div>
+    <div class="swatch" style="background:#fff;border:2px solid #D3D1C7" data-c="#fff" onclick="pickSwatch(this)"></div>
+    <input type="color" id="custom-color" class="custom-picker" value="#FF6B9D" oninput="customColor(this)" title="Custom color">
+    <button class="tool-btn active-tool" id="btn-fill" onclick="setTool('fill')">Fill</button>
+    <button class="tool-btn" id="btn-eraser" onclick="setTool('eraser')">Eraser</button>
+    <button class="tool-btn" onclick="clearScene()">Clear</button>
+  </div>
+  <div id="coloring-canvas-wrap"></div>
+  <div class="color-progress">
+    <span id="cprog-text">0% colored</span>
+    <div class="cprog-bar"><div class="cprog-fill" id="cprog-fill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="screen" id="screen-sudoku">
+  <div class="difficulty-tabs">
+    <button class="diff-tab active" onclick="setSudokuDiff('easy',this)">Easy</button>
+    <button class="diff-tab" onclick="setSudokuDiff('medium',this)">Medium</button>
+    <button class="diff-tab" onclick="setSudokuDiff('hard',this)">Hard</button>
+  </div>
+  <div class="sudoku-wrap">
+    <div class="sudoku-meta">
+      <span>Mistakes: <span class="mistakes-val" id="mistakes">0</span>/3</span>
+      <span>Time: <span class="timer-val" id="timer">0:00</span></span>
+      <span id="sudoku-msg" style="color:var(--teal)"></span>
+    </div>
+    <div class="sudoku-grid" id="sudoku-grid"></div>
+    <div class="numpad" id="numpad"></div>
+    <button class="new-puzzle-btn" onclick="newSudoku()">New puzzle</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-ws">
+  <div class="ws-category-btns" id="ws-cats"></div>
+  <div class="ws-wrap">
+    <div id="ws-theme-badge" class="ws-theme-badge"></div>
+    <div class="ws-grid" id="ws-grid"></div>
+    <div class="ws-words" id="ws-words"></div>
+    <div class="ws-status" id="ws-status">Tap first letter, then last letter of a word</div>
+  </div>
+</div>
+
+<div class="screen" id="screen-journal">
+  <div class="prompts-header">
+    <div style="font-size:14px;font-weight:500;color:var(--ink)">How are you feeling?</div>
+    <div style="font-size:11px;color:var(--muted)" id="mood-label"></div>
+  </div>
+  <div class="mood-row" id="mood-row"></div>
+  <div id="journal-prompts"></div>
+  <button class="add-prompt-btn" onclick="addJournalPrompt()">+ New prompt</button>
+  <div class="word-count-strip">
+    <div class="wc-stat"><span id="j-total-words">0</span>words written</div>
+    <div class="wc-stat"><span id="j-prompts-done">0</span>prompts done</div>
+  </div>
+</div>
+
+<script>
+var G={xp:0,level:1,streak:0,badges:[],coloredShapes:{},completedScenes:[],sudokuSolved:0,wsPuzzlesDone:0,journalWords:0,journalPromptsDone:0,currentTool:'fill',currentColor:'#F0997B',currentScene:0,sudokuDiff:'easy'};
+var LEVELS=[0,100,250,450,700,1000,1400,1900,2500,3200];
+var BADGES=[
+  {id:'first_color',name:'First Stroke',color:'coral',req:'Color your first shape'},
+  {id:'scene_done',name:'Scene Master',color:'coral',req:'Complete a coloring scene'},
+  {id:'all_scenes',name:'Picasso',color:'pink',req:'Complete all 5 scenes'},
+  {id:'first_sudoku',name:'Numberer',color:'teal',req:'Solve first Sudoku'},
+  {id:'hard_sudoku',name:'Genius',color:'teal',req:'Solve a hard Sudoku'},
+  {id:'first_ws',name:'Word Hunter',color:'amber',req:'Complete a word search'},
+  {id:'all_ws',name:'Lexicon',color:'amber',req:'Complete all 4 word searches'},
+  {id:'journal_100',name:'100 Words',color:'purple',req:'Write 100 words'},
+  {id:'journal_500',name:'500 Words',color:'purple',req:'Write 500 words'},
+  {id:'xp_500',name:'Dedicated',color:'green',req:'Earn 500 XP'},
+];
+
+function addXP(n,reason){G.xp+=n;G.streak++;updateHUD();showToast('+'+n+' XP — '+reason);checkBadges();}
+function updateHUD(){
+  document.getElementById('hud-xp').textContent=G.xp;
+  document.getElementById('hud-streak').textContent=G.streak+'🔥';
+  var lvl=1;
+  for(var i=1;i<LEVELS.length;i++){if(G.xp>=LEVELS[i])lvl=i+1;}
+  if(lvl>G.level){G.level=lvl;showToast('Level up! You are now Level '+lvl);}
+  document.getElementById('level-badge').textContent='Level '+G.level;
+  var cur=LEVELS[Math.min(G.level-1,LEVELS.length-1)];
+  var nxt=LEVELS[Math.min(G.level,LEVELS.length-1)];
+  var pct=nxt>cur?Math.round((G.xp-cur)/(nxt-cur)*100):100;
+  document.getElementById('xp-bar').style.width=Math.min(pct,100)+'%';
+  document.getElementById('xp-lbl').textContent=G.xp+' / '+nxt+' XP to next level';
+}
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},2200);
+}
+function checkBadges(){
+  var earn=function(id){
+    if(G.badges.indexOf(id)===-1){G.badges.push(id);renderBadges();showToast('Badge unlocked: '+BADGES.find(function(b){return b.id===id;}).name);}
+  };
+  if(Object.keys(G.coloredShapes).length>0)earn('first_color');
+  if(G.completedScenes.length>0)earn('scene_done');
+  if(G.completedScenes.length>=5)earn('all_scenes');
+  if(G.sudokuSolved>0)earn('first_sudoku');
+  if(G.wsPuzzlesDone>0)earn('first_ws');
+  if(G.wsPuzzlesDone>=4)earn('all_ws');
+  if(G.journalWords>=100)earn('journal_100');
+  if(G.journalWords>=500)earn('journal_500');
+  if(G.xp>=500)earn('xp_500');
+}
+function renderBadges(){
+  var el=document.getElementById('badges-display');el.innerHTML='';
+  BADGES.forEach(function(b){
+    var d=document.createElement('div');
+    d.className='badge '+b.color+(G.badges.indexOf(b.id)!==-1?' earned':'');
+    d.textContent=b.name;d.title=b.req;
+    el.appendChild(d);
+  });
+}
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('screen-'+name).classList.add('active');
+  var btns=document.querySelectorAll('.nav-btn');
+  btns.forEach(function(b){if(b.textContent.toLowerCase().includes(name)||(name==='home'&&b.textContent==='Home'))b.classList.add('active');});
+  if(name==='color'&&!colorBuilt)buildColor();
+  if(name==='sudoku'&&!sudokuReady){sudokuReady=true;buildSudokuGrid();startTimerFn();}
+  if(name==='ws'&&!wsBuilt)buildWS();
+  if(name==='journal'&&!journalBuilt)buildJournal();
+}
+
+var SCENES=[
+  {name:'Countryside',shapes:[
+    {id:'sky',tag:'rect',attrs:{x:0,y:0,width:400,height:180,fill:'#F1EFE8'}},
+    {id:'sun',tag:'circle',attrs:{cx:200,cy:70,r:42,fill:'#F1EFE8'}},
+    {id:'cloud1',tag:'ellipse',attrs:{cx:75,cy:65,rx:40,ry:22,fill:'#F1EFE8'}},
+    {id:'cloud1b',tag:'ellipse',attrs:{cx:105,cy:52,rx:28,ry:20,fill:'#F1EFE8'}},
+    {id:'cloud2',tag:'ellipse',attrs:{cx:328,cy:58,rx:42,ry:24,fill:'#F1EFE8'}},
+    {id:'cloud2b',tag:'ellipse',attrs:{cx:355,cy:45,rx:28,ry:20,fill:'#F1EFE8'}},
+    {id:'hill1',tag:'ellipse',attrs:{cx:90,cy:300,rx:155,ry:95,fill:'#F1EFE8'}},
+    {id:'hill2',tag:'ellipse',attrs:{cx:320,cy:305,rx:145,ry:90,fill:'#F1EFE8'}},
+    {id:'hill3',tag:'ellipse',attrs:{cx:200,cy:320,rx:120,ry:80,fill:'#F1EFE8'}},
+    {id:'house',tag:'rect',attrs:{x:155,y:195,width:90,height:72,fill:'#F1EFE8'}},
+    {id:'roof',tag:'polygon',attrs:{points:'142,200 200,152 258,200',fill:'#F1EFE8'}},
+    {id:'chimney',tag:'rect',attrs:{x:225,y:155,width:14,height:28,fill:'#F1EFE8'}},
+    {id:'door',tag:'rect',attrs:{x:186,y:232,width:28,height:35,rx:14,fill:'#F1EFE8'}},
+    {id:'winl',tag:'rect',attrs:{x:161,y:205,width:20,height:18,rx:3,fill:'#F1EFE8'}},
+    {id:'winr',tag:'rect',attrs:{x:219,y:205,width:20,height:18,rx:3,fill:'#F1EFE8'}},
+    {id:'trunk',tag:'rect',attrs:{x:316,y:228,width:14,height:40,rx:3,fill:'#F1EFE8'}},
+    {id:'leaf1',tag:'circle',attrs:{cx:323,cy:218,r:22,fill:'#F1EFE8'}},
+    {id:'leaf2',tag:'circle',attrs:{cx:307,cy:230,r:17,fill:'#F1EFE8'}},
+    {id:'leaf3',tag:'circle',attrs:{cx:339,cy:230,r:17,fill:'#F1EFE8'}},
+    {id:'fl1',tag:'circle',attrs:{cx:58,cy:238,r:11,fill:'#F1EFE8'}},
+    {id:'fl2',tag:'circle',attrs:{cx:80,cy:243,r:9,fill:'#F1EFE8'}},
+    {id:'fl3',tag:'circle',attrs:{cx:100,cy:236,r:11,fill:'#F1EFE8'}},
+    {id:'grass',tag:'rect',attrs:{x:0,y:265,width:400,height:15,fill:'#F1EFE8'}},
+  ]},
+  {name:'Ocean',shapes:[
+    {id:'sky2',tag:'rect',attrs:{x:0,y:0,width:400,height:160,fill:'#F1EFE8'}},
+    {id:'sun2',tag:'circle',attrs:{cx:340,cy:60,r:36,fill:'#F1EFE8'}},
+    {id:'sea1',tag:'rect',attrs:{x:0,y:155,width:400,height:50,fill:'#F1EFE8'}},
+    {id:'sea2',tag:'rect',attrs:{x:0,y:195,width:400,height:50,fill:'#F1EFE8'}},
+    {id:'sea3',tag:'rect',attrs:{x:0,y:235,width:400,height:45,fill:'#F1EFE8'}},
+    {id:'sea4',tag:'rect',attrs:{x:0,y:270,width:400,height:30,fill:'#F1EFE8'}},
+    {id:'island',tag:'ellipse',attrs:{cx:160,cy:165,rx:80,ry:25,fill:'#F1EFE8'}},
+    {id:'palmtrunk',tag:'rect',attrs:{x:155,y:100,width:10,height:70,rx:4,fill:'#F1EFE8'}},
+    {id:'palm1',tag:'ellipse',attrs:{cx:140,cy:100,rx:35,ry:12,fill:'#F1EFE8',transform:'rotate(-30 140 100)'}},
+    {id:'palm2',tag:'ellipse',attrs:{cx:178,cy:98,rx:35,ry:12,fill:'#F1EFE8',transform:'rotate(25 178 98)'}},
+    {id:'palm3',tag:'ellipse',attrs:{cx:160,cy:90,rx:30,ry:10,fill:'#F1EFE8',transform:'rotate(-5 160 90)'}},
+    {id:'boat',tag:'polygon',attrs:{points:'250,180 300,180 290,200 260,200',fill:'#F1EFE8'}},
+    {id:'sail1',tag:'polygon',attrs:{points:'275,180 275,140 305,180',fill:'#F1EFE8'}},
+    {id:'sail2',tag:'polygon',attrs:{points:'275,180 275,150 248,180',fill:'#F1EFE8'}},
+    {id:'cloud3',tag:'ellipse',attrs:{cx:80,cy:55,rx:45,ry:22,fill:'#F1EFE8'}},
+    {id:'cloud3b',tag:'ellipse',attrs:{cx:115,cy:42,rx:30,ry:20,fill:'#F1EFE8'}},
+    {id:'fish1',tag:'ellipse',attrs:{cx:60,cy:215,rx:18,ry:10,fill:'#F1EFE8'}},
+    {id:'fish2',tag:'ellipse',attrs:{cx:340,cy:245,rx:18,ry:10,fill:'#F1EFE8'}},
+    {id:'wave1',tag:'ellipse',attrs:{cx:100,cy:168,rx:30,ry:8,fill:'#F1EFE8'}},
+    {id:'wave2',tag:'ellipse',attrs:{cx:320,cy:160,rx:25,ry:6,fill:'#F1EFE8'}},
+  ]},
+  {name:'Forest',shapes:[
+    {id:'fsky',tag:'rect',attrs:{x:0,y:0,width:400,height:200,fill:'#F1EFE8'}},
+    {id:'fmoon',tag:'circle',attrs:{cx:200,cy:70,r:35,fill:'#F1EFE8'}},
+    {id:'fstar1',tag:'circle',attrs:{cx:50,cy:40,r:5,fill:'#F1EFE8'}},
+    {id:'fstar2',tag:'circle',attrs:{cx:120,cy:25,r:4,fill:'#F1EFE8'}},
+    {id:'fstar3',tag:'circle',attrs:{cx:300,cy:35,r:5,fill:'#F1EFE8'}},
+    {id:'fstar4',tag:'circle',attrs:{cx:370,cy:55,r:4,fill:'#F1EFE8'}},
+    {id:'fstar5',tag:'circle',attrs:{cx:80,cy:90,r:3,fill:'#F1EFE8'}},
+    {id:'fground',tag:'rect',attrs:{x:0,y:255,width:400,height:45,fill:'#F1EFE8'}},
+    {id:'ftree1t',tag:'rect',attrs:{x:37,y:165,width:16,height:95,rx:4,fill:'#F1EFE8'}},
+    {id:'ftree1l1',tag:'polygon',attrs:{points:'22,175 90,175 56,110',fill:'#F1EFE8'}},
+    {id:'ftree1l2',tag:'polygon',attrs:{points:'18,210 92,210 55,148',fill:'#F1EFE8'}},
+    {id:'ftree2t',tag:'rect',attrs:{x:177,y:180,width:16,height:80,rx:4,fill:'#F1EFE8'}},
+    {id:'ftree2l1',tag:'polygon',attrs:{points:'158,188 212,188 185,120',fill:'#F1EFE8'}},
+    {id:'ftree2l2',tag:'polygon',attrs:{points:'152,220 218,220 185,158',fill:'#F1EFE8'}},
+    {id:'ftree3t',tag:'rect',attrs:{x:337,y:170,width:16,height:90,rx:4,fill:'#F1EFE8'}},
+    {id:'ftree3l1',tag:'polygon',attrs:{points:'318,178 372,178 345,112',fill:'#F1EFE8'}},
+    {id:'ftree3l2',tag:'polygon',attrs:{points:'313,212 377,212 345,152',fill:'#F1EFE8'}},
+    {id:'fmushroom1',tag:'ellipse',attrs:{cx:130,cy:248,rx:22,ry:14,fill:'#F1EFE8'}},
+    {id:'fmushroomst1',tag:'rect',attrs:{x:124,y:248,width:12,height:16,rx:3,fill:'#F1EFE8'}},
+    {id:'fmushroom2',tag:'ellipse',attrs:{cx:270,cy:252,rx:18,ry:11,fill:'#F1EFE8'}},
+    {id:'fmushroomst2',tag:'rect',attrs:{x:264,y:252,width:12,height:14,rx:3,fill:'#F1EFE8'}},
+    {id:'fowl',tag:'ellipse',attrs:{cx:200,cy:235,rx:16,ry:12,fill:'#F1EFE8'}},
+    {id:'fowlhead',tag:'circle',attrs:{cx:213,cy:228,r:9,fill:'#F1EFE8'}},
+  ]},
+  {name:'Garden',shapes:[
+    {id:'gsky',tag:'rect',attrs:{x:0,y:0,width:400,height:150,fill:'#F1EFE8'}},
+    {id:'gsun',tag:'circle',attrs:{cx:60,cy:55,r:38,fill:'#F1EFE8'}},
+    {id:'gground',tag:'rect',attrs:{x:0,y:230,width:400,height:70,fill:'#F1EFE8'}},
+    {id:'gpath',tag:'ellipse',attrs:{cx:200,cy:260,rx:55,ry:18,fill:'#F1EFE8'}},
+    {id:'gbush1',tag:'circle',attrs:{cx:75,cy:210,r:38,fill:'#F1EFE8'}},
+    {id:'gbush2',tag:'circle',attrs:{cx:115,cy:218,r:30,fill:'#F1EFE8'}},
+    {id:'gbush3',tag:'circle',attrs:{cx:325,cy:210,r:38,fill:'#F1EFE8'}},
+    {id:'gbush4',tag:'circle',attrs:{cx:285,cy:218,r:30,fill:'#F1EFE8'}},
+    {id:'gf1c',tag:'circle',attrs:{cx:200,cy:155,r:22,fill:'#F1EFE8'}},
+    {id:'gf1s',tag:'rect',attrs:{x:196,y:175,width:8,height:55,rx:3,fill:'#F1EFE8'}},
+    {id:'gf1p1',tag:'ellipse',attrs:{cx:200,cy:130,rx:10,ry:18,fill:'#F1EFE8'}},
+    {id:'gf1p2',tag:'ellipse',attrs:{cx:200,cy:180,rx:10,ry:18,fill:'#F1EFE8'}},
+    {id:'gf1p3',tag:'ellipse',attrs:{cx:175,cy:155,rx:18,ry:10,fill:'#F1EFE8'}},
+    {id:'gf1p4',tag:'ellipse',attrs:{cx:225,cy:155,rx:18,ry:10,fill:'#F1EFE8'}},
+    {id:'gf2c',tag:'circle',attrs:{cx:130,cy:165,r:16,fill:'#F1EFE8'}},
+    {id:'gf2s',tag:'rect',attrs:{x:127,y:180,width:7,height:48,rx:3,fill:'#F1EFE8'}},
+    {id:'gf3c',tag:'circle',attrs:{cx:268,cy:160,r:16,fill:'#F1EFE8'}},
+    {id:'gf3s',tag:'rect',attrs:{x:265,y:175,width:7,height:50,rx:3,fill:'#F1EFE8'}},
+    {id:'gbutterfly',tag:'ellipse',attrs:{cx:200,cy:110,rx:22,ry:14,fill:'#F1EFE8',transform:'rotate(-20 200 110)'}},
+    {id:'gbutterfly2',tag:'ellipse',attrs:{cx:200,cy:110,rx:22,ry:14,fill:'#F1EFE8',transform:'rotate(20 200 110)'}},
+    {id:'gfence1',tag:'rect',attrs:{x:20,y:228,width:8,height:28,rx:2,fill:'#F1EFE8'}},
+    {id:'gfence2',tag:'rect',attrs:{x:40,y:228,width:8,height:28,rx:2,fill:'#F1EFE8'}},
+    {id:'gfenceh',tag:'rect',attrs:{x:18,y:234,width:35,height:5,rx:2,fill:'#F1EFE8'}},
+    {id:'cloud5',tag:'ellipse',attrs:{cx:300,cy:65,rx:45,ry:22,fill:'#F1EFE8'}},
+  ]},
+  {name:'Space',shapes:[
+    {id:'spacebg',tag:'rect',attrs:{x:0,y:0,width:400,height:300,fill:'#F1EFE8'}},
+    {id:'splanet1',tag:'circle',attrs:{cx:200,cy:150,r:55,fill:'#F1EFE8'}},
+    {id:'spring1',tag:'ellipse',attrs:{cx:200,cy:150,rx:85,ry:22,fill:'#F1EFE8'}},
+    {id:'smoon1',tag:'circle',attrs:{cx:90,cy:80,r:28,fill:'#F1EFE8'}},
+    {id:'smoon2',tag:'circle',attrs:{cx:340,cy:220,r:22,fill:'#F1EFE8'}},
+    {id:'srocket',tag:'polygon',attrs:{points:'310,60 300,120 320,120',fill:'#F1EFE8'}},
+    {id:'srocketbody',tag:'rect',attrs:{x:300,y:90,width:20,height:35,rx:3,fill:'#F1EFE8'}},
+    {id:'srocketwindow',tag:'circle',attrs:{cx:310,cy:100,r:6,fill:'#F1EFE8'}},
+    {id:'sstar1',tag:'circle',attrs:{cx:40,cy:30,r:4,fill:'#F1EFE8'}},
+    {id:'sstar2',tag:'circle',attrs:{cx:100,cy:20,r:3,fill:'#F1EFE8'}},
+    {id:'sstar3',tag:'circle',attrs:{cx:250,cy:25,r:4,fill:'#F1EFE8'}},
+    {id:'sstar4',tag:'circle',attrs:{cx:360,cy:35,r:3,fill:'#F1EFE8'}},
+    {id:'sstar5',tag:'circle',attrs:{cx:370,cy:150,r:4,fill:'#F1EFE8'}},
+    {id:'sstar6',tag:'circle',attrs:{cx:30,cy:200,r:3,fill:'#F1EFE8'}},
+    {id:'sstar7',tag:'circle',attrs:{cx:130,cy:265,r:4,fill:'#F1EFE8'}},
+    {id:'sstar8',tag:'circle',attrs:{cx:270,cy:270,r:3,fill:'#F1EFE8'}},
+    {id:'scomet',tag:'ellipse',attrs:{cx:60,cy:160,rx:35,ry:8,fill:'#F1EFE8',transform:'rotate(-30 60 160)'}},
+    {id:'salien',tag:'ellipse',attrs:{cx:80,cy:220,rx:20,ry:26,fill:'#F1EFE8'}},
+    {id:'salienhead',tag:'circle',attrs:{cx:80,cy:198,r:18,fill:'#F1EFE8'}},
+    {id:'salieneye1',tag:'circle',attrs:{cx:74,cy:194,r:5,fill:'#F1EFE8'}},
+    {id:'salieneye2',tag:'circle',attrs:{cx:86,cy:194,r:5,fill:'#F1EFE8'}},
+    {id:'snebula',tag:'ellipse',attrs:{cx:320,cy:90,rx:50,ry:30,fill:'#F1EFE8'}},
+  ]}
+];
+
+var colorBuilt=false,sceneColors={},currentScene=0;
+function buildColor(){
+  colorBuilt=true;
+  var tabs=document.getElementById('scene-tabs');
+  SCENES.forEach(function(s,i){
+    var b=document.createElement('button');
+    b.className='scene-tab'+(i===0?' active':'');
+    b.textContent=s.name;
+    b.onclick=function(){loadScene(i);document.querySelectorAll('.scene-tab').forEach(function(t){t.classList.remove('active');});b.classList.add('active');};
+    tabs.appendChild(b);
+    if(!sceneColors[i])sceneColors[i]={};
+  });
+  loadScene(0);
+}
+function loadScene(idx){
+  currentScene=idx;
+  var scene=SCENES[idx];
+  var svgNS='http://www.w3.org/2000/svg';
+  var svg=document.createElementNS(svgNS,'svg');
+  svg.setAttribute('viewBox','0 0 400 300');svg.setAttribute('xmlns',svgNS);
+  var colors=sceneColors[idx]||{};
+  scene.shapes.forEach(function(shape){
+    var el=document.createElementNS(svgNS,shape.tag);
+    Object.keys(shape.attrs).forEach(function(k){el.setAttribute(k,shape.attrs[k]);});
+    if(colors[shape.id])el.setAttribute('fill',colors[shape.id]);
+    el.setAttribute('stroke','#2C2C2A');el.setAttribute('stroke-width','1.5');
+    el.style.cursor='pointer';
+    el.addEventListener('click',function(){colorShape(el,shape.id,idx);});
+    svg.appendChild(el);
+  });
+  var wrap=document.getElementById('coloring-canvas-wrap');
+  wrap.innerHTML='';wrap.appendChild(svg);
+  updateColorProgress(idx);
+}
+function colorShape(el,id,sceneIdx){
+  var c=G.currentTool==='eraser'?'#F1EFE8':G.currentColor;
+  el.setAttribute('fill',c);
+  if(!sceneColors[sceneIdx])sceneColors[sceneIdx]={};
+  sceneColors[sceneIdx][id]=c;
+  if(G.currentTool!=='eraser')addXP(1,'Colored a shape');
+  updateColorProgress(sceneIdx);
+}
+function updateColorProgress(idx){
+  var scene=SCENES[idx];
+  var total=scene.shapes.length;
+  var done=Object.keys(sceneColors[idx]||{}).filter(function(k){return sceneColors[idx][k]&&sceneColors[idx][k]!=='#F1EFE8';}).length;
+  var pct=Math.round(done/total*100);
+  document.getElementById('cprog-fill').style.width=pct+'%';
+  document.getElementById('cprog-text').textContent=pct+'% colored';
+  if(pct===100&&G.completedScenes.indexOf(idx)===-1){G.completedScenes.push(idx);addXP(25,'Scene completed!');checkBadges();}
+}
+function pickSwatch(el){
+  document.querySelectorAll('.swatch').forEach(function(s){s.classList.remove('active');});
+  el.classList.add('active');G.currentColor=el.dataset.c;G.currentTool='fill';
+  document.getElementById('btn-fill').classList.add('active-tool');
+  document.getElementById('btn-eraser').classList.remove('active-tool');
+}
+function customColor(inp){
+  G.currentColor=inp.value;G.currentTool='fill';
+  document.querySelectorAll('.swatch').forEach(function(s){s.classList.remove('active');});
+}
+function setTool(t){
+  G.currentTool=t;
+  document.getElementById('btn-fill').classList.toggle('active-tool',t==='fill');
+  document.getElementById('btn-eraser').classList.toggle('active-tool',t==='eraser');
+}
+function clearScene(){sceneColors[currentScene]={};loadScene(currentScene);}
+
+var sudokuReady=false,selectedCell=null,timerInterval=null,timerSecs=0,mistakeCount=0;
+var PUZZLES={
+  easy:[
+    {p:[[5,3,0,0,7,0,0,0,0],[6,0,0,1,9,5,0,0,0],[0,9,8,0,0,0,0,6,0],[8,0,0,0,6,0,0,0,3],[4,0,0,8,0,3,0,0,1],[7,0,0,0,2,0,0,0,6],[0,6,0,0,0,0,2,8,0],[0,0,0,4,1,9,0,0,5],[0,0,0,0,8,0,0,7,9]],s:[[5,3,4,6,7,8,9,1,2],[6,7,2,1,9,5,3,4,8],[1,9,8,3,4,2,5,6,7],[8,5,9,7,6,1,4,2,3],[4,2,6,8,5,3,7,9,1],[7,1,3,9,2,4,8,5,6],[9,6,1,5,3,7,2,8,4],[2,8,7,4,1,9,6,3,5],[3,4,5,2,8,6,1,7,9]]},
+    {p:[[0,0,0,2,6,0,7,0,1],[6,8,0,0,7,0,0,9,0],[1,9,0,0,0,4,5,0,0],[8,2,0,1,0,0,0,4,0],[0,0,4,6,0,2,9,0,0],[0,5,0,0,0,3,0,2,8],[0,0,9,3,0,0,0,7,4],[0,4,0,0,5,0,0,3,6],[7,0,3,0,1,8,0,0,0]],s:[[4,3,5,2,6,9,7,8,1],[6,8,2,5,7,1,4,9,3],[1,9,7,8,3,4,5,6,2],[8,2,6,1,9,5,3,4,7],[3,7,4,6,8,2,9,1,5],[9,5,1,7,4,3,6,2,8],[5,1,9,3,2,6,8,7,4],[2,4,8,9,5,7,1,3,6],[7,6,3,4,1,8,2,5,9]]},
+    {p:[[0,2,0,6,0,8,0,0,0],[5,8,0,0,0,9,7,0,0],[0,0,0,0,4,0,0,0,0],[3,7,0,0,0,0,5,0,0],[6,0,0,0,0,0,0,0,4],[0,0,8,0,0,0,0,1,3],[0,0,0,0,2,0,0,0,0],[0,0,9,8,0,0,0,3,6],[0,0,0,3,0,6,0,9,0]],s:[[1,2,3,6,7,8,9,4,5],[5,8,4,2,3,9,7,6,1],[9,6,7,1,4,5,3,2,8],[3,7,2,4,6,1,5,8,9],[6,9,1,5,8,3,2,7,4],[4,5,8,7,9,2,6,1,3],[7,3,6,9,2,4,8,5,1],[2,1,9,8,5,7,4,3,6],[8,4,5,3,1,6,2,9,7]]},
+  ],
+  medium:[
+    {p:[[0,0,0,6,0,0,4,0,0],[7,0,0,0,0,3,6,0,0],[0,0,0,0,9,1,0,8,0],[0,0,0,0,0,0,0,0,0],[0,5,0,1,8,0,0,0,3],[0,0,0,3,0,6,0,4,5],[0,4,0,2,0,0,0,6,0],[9,0,3,0,0,0,0,0,0],[0,2,0,0,0,0,1,0,0]],s:[[5,8,1,6,7,2,4,3,9],[7,9,2,8,4,3,6,5,1],[3,6,4,5,9,1,7,8,2],[4,3,8,9,5,7,2,1,6],[2,5,6,1,8,4,9,7,3],[1,7,9,3,2,6,8,4,5],[8,4,5,2,1,9,3,6,7],[9,1,3,7,6,8,5,2,4],[6,2,7,4,3,5,1,9,8]]},
+    {p:[[0,0,0,0,0,0,0,0,0],[0,0,0,0,0,3,0,8,5],[0,0,1,0,2,0,0,0,0],[0,0,0,5,0,7,0,0,0],[0,0,4,0,0,0,1,0,0],[0,9,0,0,0,0,0,0,0],[5,0,0,0,0,0,0,7,3],[0,0,2,0,1,0,0,0,0],[0,0,0,0,4,0,0,0,9]],s:[[9,8,7,6,5,4,3,2,1],[2,4,6,1,7,3,9,8,5],[3,5,1,9,2,8,7,4,6],[1,2,8,5,3,7,6,9,4],[6,3,4,8,9,2,1,5,7],[7,9,5,4,6,1,8,3,2],[5,1,9,2,8,6,4,7,3],[4,7,2,3,1,9,5,6,8],[8,6,3,7,4,5,2,1,9]]},
+  ],
+  hard:[
+    {p:[[8,0,0,0,0,0,0,0,0],[0,0,3,6,0,0,0,0,0],[0,7,0,0,9,0,2,0,0],[0,5,0,0,0,7,0,0,0],[0,0,0,0,4,5,7,0,0],[0,0,0,1,0,0,0,3,0],[0,0,1,0,0,0,0,6,8],[0,0,8,5,0,0,0,1,0],[0,9,0,0,0,0,4,0,0]],s:[[8,1,2,7,5,3,6,4,9],[9,4,3,6,8,2,1,7,5],[6,7,5,4,9,1,2,8,3],[1,5,4,2,3,7,8,9,6],[3,6,9,8,4,5,7,2,1],[2,8,7,1,6,9,5,3,4],[5,2,1,9,7,4,3,6,8],[4,3,8,5,2,6,9,1,7],[7,9,6,3,1,8,4,5,2]]},
+  ]
+};
+var userGrid=[],currentPuzzle=null,currentSol=null;
+function setSudokuDiff(diff,btn){
+  G.sudokuDiff=diff;
+  document.querySelectorAll('.diff-tab').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');newSudoku();
+}
+function newSudoku(){
+  var pool=PUZZLES[G.sudokuDiff];
+  var p=pool[Math.floor(Math.random()*pool.length)];
+  currentPuzzle=p.p.map(function(r){return r.slice();});
+  currentSol=p.s;userGrid=currentPuzzle.map(function(r){return r.slice();});
+  mistakeCount=0;selectedCell=null;
+  document.getElementById('mistakes').textContent='0';
+  document.getElementById('sudoku-msg').textContent='';
+  timerSecs=0;clearInterval(timerInterval);startTimerFn();
+  buildSudokuGrid();
+}
+function startTimerFn(){
+  clearInterval(timerInterval);
+  timerInterval=setInterval(function(){timerSecs++;var m=Math.floor(timerSecs/60),s=timerSecs%60;document.getElementById('timer').textContent=m+':'+(s<10?'0':'')+s;},1000);
+}
+function buildSudokuGrid(){
+  var grid=document.getElementById('sudoku-grid');grid.innerHTML='';
+  var numpad=document.getElementById('numpad');numpad.innerHTML='';
+  for(var r=0;r<9;r++){
+    for(var c=0;c<9;c++){
+      (function(r,c){
+        var cell=document.createElement('div');
+        cell.className='sc'+(currentPuzzle[r][c]?' given':'');
+        if(r===2)cell.classList.add('row3');if(r===5)cell.classList.add('row6');
+        cell.dataset.r=r;cell.dataset.c=c;
+        if(currentPuzzle[r][c])cell.textContent=currentPuzzle[r][c];
+        cell.addEventListener('click',function(){selCell(cell,r,c);});
+        grid.appendChild(cell);
+      })(r,c);
+    }
+  }
+  for(var n=1;n<=9;n++){
+    (function(n){var b=document.createElement('button');b.className='nb';b.textContent=n;b.addEventListener('click',function(){enterNum(n);});numpad.appendChild(b);})(n);
+  }
+  var er=document.createElement('button');er.className='nb era';er.textContent='✕';er.addEventListener('click',function(){enterNum(0);});numpad.appendChild(er);
+}
+function selCell(cell,r,c){
+  if(currentPuzzle[r][c])return;
+  document.querySelectorAll('.sc').forEach(function(el){el.classList.remove('sel','hl');});
+  cell.classList.add('sel');selectedCell={el:cell,r:r,c:c};
+  document.querySelectorAll('.sc').forEach(function(el){if((+el.dataset.r===r||+el.dataset.c===c)&&!(+el.dataset.r===r&&+el.dataset.c===c))el.classList.add('hl');});
+}
+function enterNum(n){
+  if(!selectedCell)return;
+  var el=selectedCell.el,r=selectedCell.r,c=selectedCell.c;
+  if(currentPuzzle[r][c])return;
+  userGrid[r][c]=n;el.textContent=n||'';
+  el.classList.remove('user','wrong','correct-flash');
+  if(n){
+    el.classList.add('user');
+    if(n!==currentSol[r][c]){el.classList.add('wrong');mistakeCount++;document.getElementById('mistakes').textContent=mistakeCount;if(mistakeCount>=3){clearInterval(timerInterval);document.getElementById('sudoku-msg').textContent='3 mistakes — try new puzzle!';}}
+    else{el.classList.add('correct-flash');checkSudokuDone();}
+  }
+}
+function checkSudokuDone(){
+  for(var r=0;r<9;r++)for(var c=0;c<9;c++)if(userGrid[r][c]!==currentSol[r][c])return;
+  clearInterval(timerInterval);G.sudokuSolved++;
+  if(G.sudokuDiff==='hard'&&G.badges.indexOf('hard_sudoku')===-1)G.badges.push('hard_sudoku');
+  addXP(G.sudokuDiff==='easy'?30:G.sudokuDiff==='medium'?50:80,'Sudoku solved!');
+  document.getElementById('sudoku-msg').textContent='Solved in '+Math.floor(timerSecs/60)+'m '+timerSecs%60+'s!';checkBadges();
+}
+
+var wsBuilt=false,WS_SIZE=13,wsGrid=[],wsFound=[],wsFoundCells=[],wsStart=null,currentWsCat=0;
+var WS_CATEGORIES=[
+  {name:'Mindfulness',words:['PEACE','CALM','BREATHE','STILL','REST','AWARE','PRESENT','GROUND']},
+  {name:'Nature',words:['FOREST','RIVER','BLOOM','STONE','CLOUD','FERN','MEADOW','BREEZE']},
+  {name:'Feelings',words:['JOY','BRAVE','TENDER','SERENE','PROUD','LOVED','GENTLE','HOPE']},
+  {name:'Colours',words:['CRIMSON','AMBER','COBALT','SAGE','IVORY','LILAC','OCHRE','AZURE']},
+];
+function buildWS(){
+  wsBuilt=true;
+  var catWrap=document.getElementById('ws-cats');
+  WS_CATEGORIES.forEach(function(cat,i){
+    var b=document.createElement('button');
+    b.className='ws-cat-btn'+(i===0?' active':'');b.textContent=cat.name;
+    b.onclick=function(){currentWsCat=i;document.querySelectorAll('.ws-cat-btn').forEach(function(x){x.classList.remove('active');});b.classList.add('active');loadWSCategory(i);};
+    catWrap.appendChild(b);
+  });
+  loadWSCategory(0);
+}
+function loadWSCategory(idx){
+  wsFound=[];wsStart=null;
+  var cat=WS_CATEGORIES[idx];
+  document.getElementById('ws-theme-badge').textContent='Theme: '+cat.name;
+  wsGrid=Array.from({length:WS_SIZE},function(){return Array(WS_SIZE).fill('');});
+  wsFoundCells=Array.from({length:WS_SIZE},function(){return Array(WS_SIZE).fill(-1);});
+  placeWSWords(cat.words);fillWSRandom();renderWSGrid(cat.words);renderWSWordList(cat.words);
+  document.getElementById('ws-status').textContent='Tap first letter, then last letter of a word';
+}
+function placeWSWords(words){
+  var dirs=[[0,1],[1,0],[1,1],[-1,1],[0,-1],[-1,0],[-1,-1],[1,-1]];
+  words.forEach(function(word){
+    for(var attempt=0;attempt<300;attempt++){
+      var d=dirs[Math.floor(Math.random()*dirs.length)];
+      var r=Math.floor(Math.random()*WS_SIZE),c=Math.floor(Math.random()*WS_SIZE);var ok=true;
+      for(var i=0;i<word.length;i++){var nr=r+d[0]*i,nc=c+d[1]*i;if(nr<0||nr>=WS_SIZE||nc<0||nc>=WS_SIZE||(wsGrid[nr][nc]&&wsGrid[nr][nc]!==word[i])){ok=false;break;}}
+      if(ok){for(var i=0;i<word.length;i++)wsGrid[r+d[0]*i][c+d[1]*i]=word[i];break;}
+    }
+  });
+}
+function fillWSRandom(){var alpha='ABCDEFGHIJKLMNOPQRSTUVWXYZ';for(var r=0;r<WS_SIZE;r++)for(var c=0;c<WS_SIZE;c++)if(!wsGrid[r][c])wsGrid[r][c]=alpha[Math.floor(Math.random()*26)];}
+function renderWSGrid(words){
+  var container=document.getElementById('ws-grid');container.style.gridTemplateColumns='repeat('+WS_SIZE+',1fr)';container.innerHTML='';
+  for(var r=0;r<WS_SIZE;r++){for(var c=0;c<WS_SIZE;c++){(function(r,c){var cell=document.createElement('div');cell.className='wc';cell.textContent=wsGrid[r][c];cell.dataset.r=r;cell.dataset.c=c;cell.addEventListener('click',function(){wsClick(r,c,words);});container.appendChild(cell);})(r,c);}}
+}
+function renderWSWordList(words){
+  var el=document.getElementById('ws-words');el.innerHTML='';
+  words.forEach(function(w,i){var s=document.createElement('span');s.className='ww'+(wsFound.indexOf(i)!==-1?' found':'');s.textContent=w;s.id='wsw-'+i;el.appendChild(s);});
+}
+function wsClick(r,c,words){
+  if(!wsStart){wsStart={r:r,c:c};document.querySelectorAll('.wc').forEach(function(el){if(+el.dataset.r===r&&+el.dataset.c===c)el.classList.add('sel');});document.getElementById('ws-status').textContent='Now tap the last letter';}
+  else{
+    var path=getWSPath(wsStart.r,wsStart.c,r,c);
+    var word=path.map(function(p){return wsGrid[p[0]][p[1]];}).join('');var rword=word.split('').reverse().join('');
+    var idx=words.indexOf(word)!==-1?words.indexOf(word):words.indexOf(rword);
+    document.querySelectorAll('.wc.sel').forEach(function(el){el.classList.remove('sel');});
+    if(idx!==-1&&wsFound.indexOf(idx)===-1){
+      wsFound.push(idx);path.forEach(function(p){wsFoundCells[p[0]][p[1]]=idx;});applyWSColors();
+      document.getElementById('wsw-'+idx).className='ww found';
+      addXP(15,'Word found: '+words[idx]);
+      if(wsFound.length===words.length){G.wsPuzzlesDone++;checkBadges();addXP(20,'Puzzle complete!');document.getElementById('ws-status').textContent='All words found! Great work.';}
+      else document.getElementById('ws-status').textContent='Found "'+words[idx]+'"! '+(words.length-wsFound.length)+' to go.';
+    } else document.getElementById('ws-status').textContent=idx!==-1?'Already found!':'Not a word — try again';
+    wsStart=null;
+  }
+}
+function getWSPath(r1,c1,r2,c2){var dr=r2-r1,dc=c2-c1,steps=Math.max(Math.abs(dr),Math.abs(dc));if(steps===0)return[[r1,c1]];if(Math.abs(dr)!==steps&&dr!==0)return[];if(Math.abs(dc)!==steps&&dc!==0)return[];var sr=dr===0?0:dr/Math.abs(dr),sc=dc===0?0:dc/Math.abs(dc),path=[];for(var i=0;i<=steps;i++)path.push([r1+sr*i,c1+sc*i]);return path;}
+function applyWSColors(){document.querySelectorAll('.wc').forEach(function(el){var r=+el.dataset.r,c=+el.dataset.c;el.className='wc';if(wsFoundCells[r][c]!==-1)el.classList.add('f'+wsFoundCells[r][c]);});}
+
+var journalBuilt=false;
+var PROMPTS=["What does rest mean to you right now, in this season of your life?","Describe a moment from the past week that made you feel genuinely yourself.","What is one thing you're carrying that you'd like to set down?","List three things you noticed around you today. What do they tell you?","Write a letter to who you were a year ago. What would you want her to know?","What does enough look like? What does too much look like?","If your body could speak, what would it say to you right now?","Name something you keep postponing. What would it feel like to finally do it?","What is one kindness you can offer yourself before the day ends?","Describe a person who makes you feel safe. What is it about them?","What is something you believe now that you didn't believe two years ago?","Write about a smell, sound, or texture that feels like home to you.","What would your ideal Tuesday look like from morning to night?","What is something small you are proud of this week?","If you could send one message to your future self, what would it say?","What is draining you lately? What is filling you up?","Describe the last time you laughed deeply. What happened?","What do you wish people understood about you without you having to explain?","What is one habit or thought pattern you're ready to leave behind?","Write about something you're learning to forgive — in yourself or another."];
+var PCOLS=['pc-coral','pc-teal','pc-amber','pc-purple','pc-pink'];
+var usedPrompts=[];
+var MOODS=[{e:'😌',l:'Peaceful'},{e:'😊',l:'Happy'},{e:'😐',l:'Neutral'},{e:'😔',l:'Low'},{e:'😤',l:'Frustrated'},{e:'🤩',l:'Energised'}];
+function buildJournal(){
+  journalBuilt=true;
+  var moodRow=document.getElementById('mood-row');
+  MOODS.forEach(function(m){
+    var b=document.createElement('button');b.className='mood-btn';b.textContent=m.e;b.title=m.l;
+    b.onclick=function(){document.querySelectorAll('.mood-btn').forEach(function(x){x.classList.remove('sel');});b.classList.add('sel');document.getElementById('mood-label').textContent=m.l;addXP(5,'Mood checked in');};
+    moodRow.appendChild(b);
+  });
+  addJournalPrompt();addJournalPrompt();
+}
+function addJournalPrompt(){
+  var available=PROMPTS.map(function(_,i){return i;}).filter(function(i){return usedPrompts.indexOf(i)===-1;});
+  if(!available.length)return;
+  var idx=available[Math.floor(Math.random()*available.length)];usedPrompts.push(idx);
+  var container=document.getElementById('journal-prompts');var pnum=usedPrompts.length;
+  var card=document.createElement('div');card.className='prompt-card '+PCOLS[(pnum-1)%PCOLS.length];
+  var tid='jta-'+pnum;
+  card.innerHTML='<div class="prompt-num">Prompt '+pnum+'</div><div class="prompt-q">'+PROMPTS[idx]+'</div><textarea class="jarea" id="'+tid+'" placeholder="Write freely…" rows="4"></textarea><div class="jchars" id="jc-'+pnum+'">0 words</div>';
+  container.appendChild(card);
+  var ta=document.getElementById(tid);
+  ta.addEventListener('input',function(){var words=ta.value.trim().split(/\s+/).filter(function(w){return w.length>0;}).length;document.getElementById('jc-'+pnum).textContent=words+' words';recalcJournalStats();});
+  ta.addEventListener('blur',function(){var words=ta.value.trim().split(/\s+/).filter(function(w){return w.length>0;}).length;if(words>0){addXP(Math.min(words,20),'Journal words');recalcJournalStats();}});
+}
+function recalcJournalStats(){
+  var total=0,done=0;
+  document.querySelectorAll('.jarea').forEach(function(ta){var words=ta.value.trim().split(/\s+/).filter(function(w){return w.length>0;}).length;total+=words;if(words>0)done++;});
+  G.journalWords=total;G.journalPromptsDone=done;
+  document.getElementById('j-total-words').textContent=total;document.getElementById('j-prompts-done').textContent=done;checkBadges();
+}
+
+updateHUD();renderBadges();
+setTimeout(function(){newSudoku();sudokuReady=true;},50);
+</script>
+</body>
+</html>
